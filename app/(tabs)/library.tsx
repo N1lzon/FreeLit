@@ -11,8 +11,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { getBooks } from '../libros';
-import { Book } from '../types';
+import { getBooks } from '../../lib/libros';
+import { Book } from '../../lib/types';
 import BookDetailModal from './BookDetailModal';
 
 const screenWidth = Dimensions.get('window').width;
@@ -108,10 +108,7 @@ const LibraryScreen: React.FC = () => {
                   source={{ uri: item.cover_url }}
                   className="w-full h-72 rounded-2xl"
                 />
-                {/* Opcional: Etiqueta para libros nuevos */}
-                <View className="absolute top-2 right-2 bg-accentOne rounded-md px-2 py-1">
-                  <Text className="text-xs text-white">Nuevo</Text>
-                </View>
+                
               </View>
               <Text className="font-bold mt-2 text-center">{item.title}</Text>
               <Text className="text-gray-600 text-center">{item.author}</Text>

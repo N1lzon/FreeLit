@@ -1,4 +1,4 @@
-import { config } from '../lib/appwrite';
+import { config } from './appwrite';
 import { Book } from './types';
 
 export const getBooks = async (): Promise<Book[]> => {

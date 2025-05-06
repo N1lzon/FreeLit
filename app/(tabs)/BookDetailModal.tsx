@@ -4,7 +4,7 @@ import * as FileSystem from 'expo-file-system';
 import { StatusBar } from 'expo-status-bar';
 import React from 'react';
 import { Alert, Image, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { Book } from '../types';
+import { Book } from '../../lib/types';
 
 interface BookDetailModalProps {
   visible: boolean;
@@ -72,11 +72,6 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, boo
             por {book.author}
           </Text>
           
-          {/* Descripción */}
-          <Text className="text-base text-gray-700 text-justify mt-5">
-            {book.description}
-          </Text>
-
           {/* Botones de acción */}
           <View className="flex-row justify-around mt-5">
             <TouchableOpacity onPress={handleDownload} className="bg-primary py-3 px-4 rounded-lg flex-1 mx-2">
@@ -88,6 +83,13 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, boo
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Descripción */}
+          <Text className="text-base text-gray-700 text-justify mt-5">
+            {book.description}
+          </Text>
+
+          
         </ScrollView>
       </View>
     </Modal>

@@ -9,8 +9,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { getBooks } from '../libros';
-import { Book } from '../types';
+import { getBooks } from '../../lib/libros';
+import { Book } from '../../lib/types';
 import BookDetailModal from './BookDetailModal';
 import SearchModal from './SearchModal';
 
