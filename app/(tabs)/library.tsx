@@ -120,6 +120,7 @@ const LibraryScreen: React.FC = () => {
       <BookDetailModal
         visible={detailModalVisible}
         onClose={() => setDetailModalVisible(false)}
+        onRefresh={fetchLibraryBooks} // Pasa la función que refresca los libros de la biblioteca
         book={selectedBook}
       />
     </>
