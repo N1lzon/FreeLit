@@ -2,17 +2,16 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useState } from 'react';
 import {
-    FlatList,
-    Image,
-    Modal,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  FlatList,
+  Image,
+  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Book } from '../types';
 
-// Función para normalizar el texto (elimina acentos y convierte a minúsculas)
 const normalizeString = (str: string) =>
   str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -20,12 +19,17 @@ interface SearchModalProps {
   visible: boolean;
   onClose: () => void;
   books: Book[];
+  onBookPress: (book: Book) => void;
 }
 
-const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, books }) => {
+const SearchModal: React.FC<SearchModalProps> = ({
+  visible,
+  onClose,
+  books,
+  onBookPress
+}) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Cuando no hay término de búsqueda, no se muestran resultados.
   const filteredBooks =
     searchQuery.trim() === ''
       ? []
@@ -39,7 +43,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, books }) =>
     <Modal visible={visible} animationType="slide">
       <StatusBar style="light" />
       <View className="flex-1 bg-white">
-        {/* Barra de búsqueda con autofocus para abrir el teclado */}
+        {/* Barra de búsqueda con autofocus para abrir el teclado automáticamente */}
         <View className="p-5 flex-row items-center">
           <TextInput
             autoFocus
@@ -59,7 +63,8 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, books }) =>
             <Text className="text-primary font-bold">Cancelar</Text>
           </TouchableOpacity>
         </View>
-        {/* Resultados de búsqueda en formato de lista */}
+
+        {/* Resultados de búsqueda: se muestran en forma de lista con la portada a la izquierda */}
         <FlatList
           data={filteredBooks}
           keyExtractor={(item) => item.$id}
@@ -70,7 +75,13 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, books }) =>
             </View>
           }
           renderItem={({ item }) => (
-            <TouchableOpacity className="flex-row items-center mb-4 p-2 border-b border-gray-200">
+            <TouchableOpacity
+              onPress={() => {
+                onBookPress(item);
+                onClose();
+              }}
+              className="flex-row items-center mb-4 p-2 border-b border-gray-200"
+            >
               <Image
                 source={{ uri: item.cover_url }}
                 className="w-16 h-16 rounded-md"

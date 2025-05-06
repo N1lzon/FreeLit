@@ -1,5 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
+import "../../global.css";
 
 export default function TabLayout() {
   return (
@@ -9,8 +10,10 @@ export default function TabLayout() {
         options={{
           title: 'Home',
           headerShown:false,
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="home" color={color} />,
-          tabBarActiveTintColor:'',
+          tabBarShowLabel:false,
+          tabBarIcon: ({ color }) => <FontAwesome size={32} name="home" color={color} />,
+          tabBarActiveTintColor:'#ed7152',
+
         }}
       />
       <Tabs.Screen
@@ -18,13 +21,22 @@ export default function TabLayout() {
         options={{
           title: 'Biblioteca',
           headerShown:false,
-          tabBarIcon: ({ color }) => <FontAwesome size={28} name="bookmark" color={color} />,
-          tabBarActiveTintColor:'',
+          tabBarShowLabel:false,
+          tabBarIcon: ({ color }) => <FontAwesome size={32} name="bookmark" color={color} />,
+          tabBarActiveTintColor:'#ed7152',
         }}
+        
       />
 
       <Tabs.Screen
         name="SearchModal"
+        options={{
+          href: null,
+        }}
+      />
+
+<Tabs.Screen
+        name="BookDetailModal"
         options={{
           href: null,
         }}

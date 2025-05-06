@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { getBooks } from '../libros';
 import { Book } from '../types';
+import BookDetailModal from './BookDetailModal';
 import SearchModal from './SearchModal';
 
 const categories = ['Filosofía', 'Clásicos', 'Horror'];
@@ -21,6 +22,10 @@ const HomeScreen: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('Filosofía');
   const [searchModalVisible, setSearchModalVisible] = useState<boolean>(false);
+
+  // Estados para el modal de detalles
+  const [detailModalVisible, setDetailModalVisible] = useState<boolean>(false);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -35,8 +40,7 @@ const HomeScreen: React.FC = () => {
     fetchBooks();
   }, []);
 
-  // Se filtran los libros por la categoría seleccionada, se ordenan por "created_at"
-  // de más reciente a más antiguo y se limitan a 10 elementos.
+  // Se filtran los libros para la pantalla principal según la categoría, se ordenan y se limitan.
   const finalBooks = books
     .filter((book) => book.category === selectedCategory)
     .sort(
@@ -45,11 +49,15 @@ const HomeScreen: React.FC = () => {
     )
     .slice(0, 10);
 
-  // Encabezado de la pantalla principal, que incluye el banner, la barra de búsqueda (que abre el modal)
-  // y las pestañas de categoría.
+  // Función para manejar el toque en un libro, ya sea desde la pantalla principal o el modal de búsqueda.
+  const handleBookPress = (book: Book) => {
+    setSelectedBook(book);
+    setDetailModalVisible(true);
+  };
+
+  // Encabezado de la pantalla principal (banner, botón de búsqueda y pestañas de categoría)
   const renderHeader = () => (
     <View>
-      {/* Encabezado con fondo */}
       <View className="bg-secondary p-5 rounded-b-[30px]">
         <TouchableOpacity
           onPress={() => setSearchModalVisible(true)}
@@ -70,8 +78,6 @@ const HomeScreen: React.FC = () => {
           </Text>
         </View>
       </View>
-
-      {/* Pestañas de categorías */}
       <View className="flex-row justify-around mt-5">
         {categories.map((cat) => (
           <TouchableOpacity
@@ -103,7 +109,10 @@ const HomeScreen: React.FC = () => {
         }}
         contentContainerStyle={{ paddingBottom: 40 }}
         renderItem={({ item }) => (
-          <View style={{ marginBottom: 20, width: cardWidth }}>
+          <TouchableOpacity
+            onPress={() => handleBookPress(item)}
+            style={{ marginBottom: 20, width: cardWidth }}
+          >
             <View className="relative">
               <Image
                 source={{ uri: item.cover_url }}
@@ -115,13 +124,19 @@ const HomeScreen: React.FC = () => {
             </View>
             <Text className="font-bold mt-2 text-center">{item.title}</Text>
             <Text className="text-gray-600 text-center">{item.author}</Text>
-          </View>
+          </TouchableOpacity>
         )}
       />
       <SearchModal
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
         books={books}
+        onBookPress={(book) => handleBookPress(book)}
+      />
+      <BookDetailModal
+        visible={detailModalVisible}
+        onClose={() => setDetailModalVisible(false)}
+        book={selectedBook}
       />
     </>
   );

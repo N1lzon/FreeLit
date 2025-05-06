@@ -6,5 +6,6 @@ export type Book = {
     file_url: string;
     category: string;
     created_at: string;
+    description: string;
   };
   

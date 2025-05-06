@@ -21,6 +21,7 @@ export const getBooks = async (): Promise<Book[]> => {
       file_url: doc.file_url,
       category: doc.category,
       created_at: doc.created_at,
+      description: doc.description,
     }));
   } catch (error) {
     console.error('Error al obtener libros:', error);
