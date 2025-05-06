@@ -22,6 +22,15 @@ export default function TabLayout() {
           tabBarActiveTintColor:'',
         }}
       />
+
+      <Tabs.Screen
+        name="SearchModal"
+        options={{
+          href: null,
+        }}
+      />
+
+      
     </Tabs>
   );
 }

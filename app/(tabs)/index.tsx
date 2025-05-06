@@ -6,12 +6,12 @@ import {
   FlatList,
   Image,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from 'react-native';
 import { getBooks } from '../libros';
 import { Book } from '../types';
+import SearchModal from './SearchModal';
 
 const categories = ['Filosofía', 'Clásicos', 'Horror'];
 const screenWidth = Dimensions.get('window').width;
@@ -19,8 +19,8 @@ const cardWidth = screenWidth / 2 - 30;
 
 const HomeScreen: React.FC = () => {
   const [books, setBooks] = useState<Book[]>([]);
-  const [search, setSearch] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Filosofía');
+  const [searchModalVisible, setSearchModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -35,38 +35,33 @@ const HomeScreen: React.FC = () => {
     fetchBooks();
   }, []);
 
-  // Filtramos los libros según la categoría seleccionada y el texto de búsqueda,
-  // ordenándolos por "created_at" de más reciente a más antiguo y limitándolos a 10.
+  // Se filtran los libros por la categoría seleccionada, se ordenan por "created_at"
+  // de más reciente a más antiguo y se limitan a 10 elementos.
   const finalBooks = books
-    .filter(
-      (book) =>
-        book.category === selectedCategory &&
-        book.title.toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((book) => book.category === selectedCategory)
     .sort(
       (a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
     .slice(0, 10);
 
-  // Encabezado del listado que incluye la barra de búsqueda, banner y pestañas de categoría.
+  // Encabezado de la pantalla principal, que incluye el banner, la barra de búsqueda (que abre el modal)
+  // y las pestañas de categoría.
   const renderHeader = () => (
     <View>
       {/* Encabezado con fondo */}
-      <View className="bg-[#5a2a10] p-5 rounded-b-[30px]">
-        <TextInput
-          placeholder="Buscar"
-          placeholderTextColor="#999"
-          value={search}
-          onChangeText={setSearch}
+      <View className="bg-secondary p-5 rounded-b-[30px]">
+        <TouchableOpacity
+          onPress={() => setSearchModalVisible(true)}
           className="bg-white p-3 rounded-lg text-base mt-10"
-        />
+        >
+          <Text className="text-gray-400">Buscar...</Text>
+        </TouchableOpacity>
         <View className="mt-5">
           <Image
             source={require('../../assets/banner.jpg')}
             className="w-full h-40 rounded-2xl"
           />
-          
           <Text className="absolute top-10 left-60 text-3xl text-white font-bold">
             Últimos libros
           </Text>
@@ -82,7 +77,7 @@ const HomeScreen: React.FC = () => {
           <TouchableOpacity
             key={cat}
             onPress={() => setSelectedCategory(cat)}
-            className={`${selectedCategory === cat ? 'bg-[#f15c2d]' : 'bg-gray-200'} py-1 px-3 rounded-lg`}
+            className={`${selectedCategory === cat ? 'bg-primary' : 'bg-gray-200'} py-1 px-3 rounded-lg`}
           >
             <Text className={`${selectedCategory === cat ? 'text-white' : 'text-gray-800'}`}>
               {cat}
@@ -114,7 +109,7 @@ const HomeScreen: React.FC = () => {
                 source={{ uri: item.cover_url }}
                 className="w-full h-72 rounded-2xl"
               />
-              <View className="absolute top-2 right-2 bg-red-500 rounded-md px-2 py-1">
+              <View className="absolute top-2 right-2 bg-accentOne rounded-md px-2 py-1">
                 <Text className="text-xs text-white">Nuevo</Text>
               </View>
             </View>
@@ -122,6 +117,11 @@ const HomeScreen: React.FC = () => {
             <Text className="text-gray-600 text-center">{item.author}</Text>
           </View>
         )}
+      />
+      <SearchModal
+        visible={searchModalVisible}
+        onClose={() => setSearchModalVisible(false)}
+        books={books}
       />
     </>
   );
