@@ -2,10 +2,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system';
+import * as IntentLauncher from 'expo-intent-launcher';
 import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Book } from '../../lib/types';
 // Importamos el SDK de Appwrite para construir la URL de descarga
 import { config, storage } from '../../lib/appwrite';
@@ -21,6 +23,8 @@ interface BookDetailModalProps {
 const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onRefresh, book }) => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [downloading, setDownloading] = useState<boolean>(false);
+  const [isDownloaded, setIsDownloaded] = useState<boolean>(false);
+  const [localFilePath, setLocalFilePath] = useState<string>('');
 
   useEffect(() => {
     if (visible && book) {
@@ -33,9 +37,102 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
           console.error("Error retrieving favorite status:", error);
         }
       };
+
+      const checkIfDownloaded = async () => {
+        if (!book || !book.title) return;
+        
+        // Crear un nombre de archivo limpio basado en el título
+        const sanitizedTitle = book.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        const fileName = `${sanitizedTitle}.epub`;
+        
+        // Verificar si el archivo existe en el directorio de documentos
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+        
+        try {
+          const fileInfo = await FileSystem.getInfoAsync(fileUri);
+          setIsDownloaded(fileInfo.exists);
+          if (fileInfo.exists) {
+            setLocalFilePath(fileUri);
+            console.log("Archivo encontrado localmente:", fileUri);
+          }
+        } catch (error) {
+          console.error("Error checking if file exists:", error);
+          setIsDownloaded(false);
+        }
+      };
+      
       fetchSavedStatus();
+      checkIfDownloaded();
     }
   }, [visible, book]);
+
+  const openEpubFile = async (fileUri: string) => {
+    try {
+      if (Platform.OS === 'ios') {
+        // En iOS, usamos Sharing para abrir el archivo
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(fileUri);
+        } else {
+          Alert.alert('Error', 'Compartir no está disponible en este dispositivo');
+        }
+      } else {
+        // En Android, usamos IntentLauncher para abrir el archivo
+        const cUri = await FileSystem.getContentUriAsync(fileUri);
+        await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+          data: cUri,
+          flags: 1,
+          type: 'application/epub+zip'
+        });
+      }
+    } catch (error) {
+      console.error('Error al abrir el archivo:', error);
+      Alert.alert(
+        'Error', 
+        'No se pudo abrir el archivo. Asegúrate de tener instalada una aplicación compatible con archivos EPUB.'
+      );
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    if (!isDownloaded || !localFilePath || !book) return;
+
+    Alert.alert(
+      "Eliminar archivo",
+      `¿Estás seguro de que deseas eliminar "${book.title}" del dispositivo?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel"
+        },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Eliminar el archivo del sistema de archivos
+              await FileSystem.deleteAsync(localFilePath);
+              
+              // Actualizar el estado
+              setIsDownloaded(false);
+              setLocalFilePath('');
+              
+              Alert.alert(
+                "Archivo eliminado",
+                `"${book.title}" ha sido eliminado del dispositivo correctamente.`
+              );
+            } catch (error) {
+              console.error("Error al eliminar archivo:", error);
+              Alert.alert(
+                "Error",
+                "No se pudo eliminar el archivo. Por favor, intenta de nuevo."
+              );
+            }
+          }
+        }
+      ]
+    );
+  };
 
   const handleDownload = async () => {
     if (!book || !book.file_id) {
@@ -53,7 +150,6 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
       const fileUrl = storage.getFileView(config.bucketId, book.file_id).toString();
       
       // Determinar la extensión del archivo basada en el nombre o tipo
-      // Asumimos que el archivo es un PDF por defecto, pero puedes ajustarlo según tus necesidades
       let extension = '.epub';
       if (book.title) {
         // Crear un nombre de archivo limpio basado en el título
@@ -99,8 +195,22 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
           
           Alert.alert(
             "¡Descarga completa!", 
-            `"${book.title}" se ha guardado en tu carpeta FreeLit.`
+            `"${book.title}" se ha guardado en tu carpeta FreeLit.`,
+            [
+              { 
+                text: 'Abrir ahora', 
+                onPress: () => openEpubFile(fileUri) 
+              },
+              { 
+                text: 'Más tarde', 
+                style: 'cancel' 
+              }
+            ]
           );
+          
+          // Actualizar el estado para mostrar el botón "Abrir"
+          setIsDownloaded(true);
+          setLocalFilePath(fileUri);
         } catch (albumError) {
           // Si falla la creación del álbum, al menos el archivo ya está en la Media Library
           console.error("Error creating/accessing album:", albumError);
@@ -108,6 +218,9 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
             "¡Descarga completa!", 
             `"${book.title}" se ha guardado en tu galería.`
           );
+          // Actualizar el estado para mostrar el botón "Abrir"
+          setIsDownloaded(true);
+          setLocalFilePath(fileUri);
         }
       } else {
         throw new Error("No se pudo determinar el nombre del archivo");
@@ -120,6 +233,16 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
       );
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDownloadOrOpen = async () => {
+    if (isDownloaded && localFilePath) {
+      // Si el archivo ya está descargado, lo abrimos
+      await openEpubFile(localFilePath);
+    } else {
+      // Si no está descargado, lo descargamos
+      await handleDownload();
     }
   };
 
@@ -184,21 +307,36 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
           </Text>
 
           {/* Botones de acción */}
-          <View className="flex-row justify-around mt-5">
-            <TouchableOpacity 
-              onPress={handleDownload} 
-              className={`bg-primary py-3 px-4 rounded-lg flex-1 mx-2 ${downloading ? 'opacity-50' : ''}`}
-              disabled={downloading}
-            >
-              <Text className="text-white text-center font-bold">
-                {downloading ? 'Descargando...' : 'Descargar'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleLibraryToggle} className="bg-primary py-3 px-4 rounded-lg flex-1 mx-2">
-              <Text className="text-white text-center font-bold">
-                {isSaved ? 'Quitar de la biblioteca' : 'Añadir a biblioteca'}
-              </Text>
-            </TouchableOpacity>
+          <View className="mt-5">
+            {/* Primera fila de botones: Descargar/Abrir y Biblioteca */}
+            <View className="flex-row justify-around">
+              <TouchableOpacity 
+                onPress={handleDownloadOrOpen} 
+                className={`bg-primary py-3 px-4 rounded-lg flex-1 mx-2 ${downloading ? 'opacity-50' : ''}`}
+                disabled={downloading}
+              >
+                <Text className="text-white text-center font-bold">
+                  {downloading ? 'Descargando...' : isDownloaded ? 'Abrir' : 'Descargar'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLibraryToggle} className="bg-primary py-3 px-4 rounded-lg flex-1 mx-2">
+                <Text className="text-white text-center font-bold">
+                  {isSaved ? 'Quitar de la biblioteca' : 'Añadir a biblioteca'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Segunda fila: Botón de eliminar archivo - Solo visible si está descargado */}
+            {isDownloaded && (
+              <TouchableOpacity 
+                onPress={handleDeleteFile} 
+                className="bg-secondary py-3 px-4 rounded-lg mt-3 mx-2"
+              >
+                <Text className="text-white text-center font-bold">
+                  Eliminar del dispositivo
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Descripción */}
