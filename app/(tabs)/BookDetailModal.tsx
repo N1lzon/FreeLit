@@ -7,6 +7,8 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Book } from '../../lib/types';
+// Importamos el SDK de Appwrite para construir la URL de descarga
+import { config, storage } from '../../lib/appwrite';
 
 interface BookDetailModalProps {
   visible: boolean;
@@ -18,6 +20,7 @@ interface BookDetailModalProps {
 
 const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onRefresh, book }) => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
+  const [downloading, setDownloading] = useState<boolean>(false);
 
   useEffect(() => {
     if (visible && book) {
@@ -35,49 +38,88 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
   }, [visible, book]);
 
   const handleDownload = async () => {
-    if (!book) return;
+    if (!book || !book.file_id) {
+      Alert.alert("Error", "El archivo del libro no está disponible.");
+      return;
+    }
+
     try {
-      // Asegurarse de que la URL del archivo es válida
-      const fileUrl = book.file_url;
-      if (!fileUrl) {
-        Alert.alert("Error", "La URL del archivo es inválida.");
-        return;
-      }
+      setDownloading(true);
       
-      // Extraer el nombre del archivo
-      const segments = fileUrl.split('/');
-      const fileName = segments[segments.length - 1];
+      // Aquí asumimos que tienes configurado el storage de Appwrite en tu lib/appwrite.ts
+      // Y que el file_id es el ID del archivo en Appwrite
       
-      // Descargar el archivo a una ubicación temporal en el sandbox
-      const tempFileUri = FileSystem.documentDirectory + fileName;
-      const downloadResult = await FileSystem.downloadAsync(fileUrl, tempFileUri);
-      if (downloadResult.status !== 200) {
-        Alert.alert("Error", `La descarga falló con código: ${downloadResult.status}`);
-        return;
-      }
+      // Obtener la URL de descarga como string
+      const fileUrl = storage.getFileView(config.bucketId, book.file_id).toString();
       
-      // Solicitar permisos para acceder a la Media Library
-      const mediaPermission = await MediaLibrary.requestPermissionsAsync();
-      if (!mediaPermission.granted) {
-        Alert.alert("Permiso denegado", "No se tiene permiso para guardar archivos en la librería.");
-        return;
-      }
-      
-      // Crear un asset a partir del archivo descargado
-      const asset = await MediaLibrary.createAssetAsync(tempFileUri);
-      
-      // Crear (o agregar a) un álbum público llamado "freelit"
-      let album = await MediaLibrary.getAlbumAsync('freelit');
-      if (!album) {
-        album = await MediaLibrary.createAlbumAsync('freelit', asset, false);
+      // Determinar la extensión del archivo basada en el nombre o tipo
+      // Asumimos que el archivo es un PDF por defecto, pero puedes ajustarlo según tus necesidades
+      let extension = '.epub';
+      if (book.title) {
+        // Crear un nombre de archivo limpio basado en el título
+        const sanitizedTitle = book.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+        const fileName = `${sanitizedTitle}${extension}`;
+        
+        // Definir la ruta completa donde se guardará el archivo en el dispositivo
+        const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+        
+        console.log("Downloading file from:", fileUrl);
+        console.log("Saving to:", fileUri);
+        
+        // Descargar el archivo
+        const downloadResult = await FileSystem.downloadAsync(fileUrl, fileUri);
+        
+        if (downloadResult.status !== 200) {
+          throw new Error(`La descarga falló con código: ${downloadResult.status}`);
+        }
+        
+        // Solicitar permisos para acceder a la Media Library
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        
+        if (status !== 'granted') {
+          Alert.alert(
+            "Permiso denegado", 
+            "Necesitamos permiso para guardar el archivo en tu dispositivo."
+          );
+          return;
+        }
+        
+        // Guardar el archivo en la Media Library
+        const asset = await MediaLibrary.createAssetAsync(fileUri);
+        
+        // Intentar guardar en un álbum específico si es posible
+        try {
+          let album = await MediaLibrary.getAlbumAsync('FreeLit');
+          
+          if (album === null) {
+            album = await MediaLibrary.createAlbumAsync('FreeLit', asset, false);
+          } else {
+            await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+          }
+          
+          Alert.alert(
+            "¡Descarga completa!", 
+            `"${book.title}" se ha guardado en tu carpeta FreeLit.`
+          );
+        } catch (albumError) {
+          // Si falla la creación del álbum, al menos el archivo ya está en la Media Library
+          console.error("Error creating/accessing album:", albumError);
+          Alert.alert(
+            "¡Descarga completa!", 
+            `"${book.title}" se ha guardado en tu galería.`
+          );
+        }
       } else {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+        throw new Error("No se pudo determinar el nombre del archivo");
       }
-      
-      Alert.alert("Descarga completada", `El archivo se ha guardado en el álbum "freelit".`);
     } catch (error) {
-      console.error("Error downloading file:", error);
-      Alert.alert("Error", "No se pudo descargar el archivo");
+      console.error("Error al descargar el archivo:", error);
+      Alert.alert(
+        "Error de descarga", 
+        "No se pudo descargar el archivo. Por favor, intenta de nuevo más tarde."
+      );
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -143,8 +185,14 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
 
           {/* Botones de acción */}
           <View className="flex-row justify-around mt-5">
-            <TouchableOpacity onPress={handleDownload} className="bg-primary py-3 px-4 rounded-lg flex-1 mx-2">
-              <Text className="text-white text-center font-bold">Descargar</Text>
+            <TouchableOpacity 
+              onPress={handleDownload} 
+              className={`bg-primary py-3 px-4 rounded-lg flex-1 mx-2 ${downloading ? 'opacity-50' : ''}`}
+              disabled={downloading}
+            >
+              <Text className="text-white text-center font-bold">
+                {downloading ? 'Descargando...' : 'Descargar'}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleLibraryToggle} className="bg-primary py-3 px-4 rounded-lg flex-1 mx-2">
               <Text className="text-white text-center font-bold">

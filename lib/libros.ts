@@ -18,7 +18,7 @@ export const getBooks = async (): Promise<Book[]> => {
       title: doc.title,
       author: doc.author,
       cover_url: doc.cover_url,
-      file_url: doc.file_url,
+      file_id: doc.file_url,
       category: doc.category,
       created_at: doc.created_at,
       description: doc.description,
