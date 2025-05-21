@@ -7,9 +7,10 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Alert, Image, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { Book } from '../../lib/types';
 // Importamos el SDK de Appwrite para construir la URL de descarga
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { config, storage } from '../../lib/appwrite';
 
 interface BookDetailModalProps {
@@ -25,6 +26,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
   const [downloading, setDownloading] = useState<boolean>(false);
   const [isDownloaded, setIsDownloaded] = useState<boolean>(false);
   const [localFilePath, setLocalFilePath] = useState<string>('');
+  const insets = useSafeAreaInsets(); // Para gestionar áreas seguras
 
   useEffect(() => {
     if (visible && book) {
@@ -277,17 +279,32 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
     <Modal 
       visible={visible}
       animationType="slide"
-      // Esta propiedad se invoca al presionar el botón de "atrás" físico/digital
       onRequestClose={handleClose}
+      // Esta propiedad es crucial para que el modal sea realmente de pantalla completa
+      presentationStyle="fullScreen"
+      statusBarTranslucent={true}
     >
       <StatusBar style="light" />
-      <View className="flex-1 bg-white">
+      <SafeAreaView className="flex-1 bg-white">
         {/* Botón de cerrar en la esquina superior derecha */}
-        <TouchableOpacity onPress={handleClose} className="absolute top-10 right-5 z-10">
+        <TouchableOpacity 
+          onPress={handleClose} 
+          className="absolute z-10"
+          style={{ 
+            top: insets.top + 10,
+            right: 16
+          }}
+        >
           <Ionicons name="close-circle" size={32} color="#333" />
         </TouchableOpacity>
 
-        <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 60 }}>
+        <ScrollView 
+          contentContainerStyle={{ 
+            padding: 20, 
+            paddingTop: insets.top + 50,
+            paddingBottom: Math.max(insets.bottom, 24)
+          }}
+        >
           {/* Portada: ocupa el 80% del ancho, centrada y mantiene aspect ratio */}
           <Image
             source={{ uri: book.cover_url }}
@@ -344,7 +361,7 @@ const BookDetailModal: React.FC<BookDetailModalProps> = ({ visible, onClose, onR
             {book.description}
           </Text>
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 };
