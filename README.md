@@ -1,50 +1,30 @@
-# Welcome to your Expo app 👋
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
-## Get started
+# FreeLit
 
-1. Install dependencies
+FreeLit es una aplicación móvil de biblioteca digital que facilita el acceso a una variedad de libros de dominio publico. Desarrollada con React Native y Appwrite, FreeLit está diseñada para ofrecer una experiencia de usuario moderna, fluida y coherente en dispositivos móviles.
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
 
-   ```bash
-   npx expo start
-   ```
+## Tecnologías Utilizadas
 
-In the output, you'll find options to open the app in a
+- **React Native** – Framework para construir aplicaciones móviles nativas usando JavaScript y React.
+- **Expo** – Plataforma y conjunto de herramientas para desarrollar y desplegar aplicaciones React Native.
+- **Tailwind CSS** – Utilizado para estilizar los componentes de React Native y lograr un diseño moderno y responsivo.
+- **Appwrite** – Backend-as-a-Service que maneja la autenticación, gestión de usuarios y funciones adicionales del backend.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
 
-When you're ready, run:
+## Licencia
 
-```bash
-npm run reset-project
-```
+Este proyecto está licenciado bajo la [MIT License](LICENSE).
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-## Learn more
+## Contacto
 
-To learn more about developing your project with Expo, look at the following resources:
+Si tienes preguntas, sugerencias o simplemente deseas charlar sobre el proyecto, puedes abrir un issue en el repositorio o contactarme directamente a través de mi correo: nilsoncasco@outlook.com.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
